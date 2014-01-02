@@ -11,6 +11,12 @@
 #define MPU6050_SENS_16G 2048
 #define MPU6050_TEMP_ZERO -12412 // -512 - (340 * 35)
 #define MPU6050_TEMP_PER_DEGREE 340
+#define MPU6050_ACCEL_OFFSET_X -7361
+#define MPU6050_ACCEL_OFFSET_Y 27753
+#define MPU6050_ACCEL_OFFSET_Z 15597
+#define MPU6050_GYRO_OFFSET_X -13
+#define MPU6050_GYRO_OFFSET_Y -22
+#define MPU6050_GYRO_OFFSET_Z 4
 
 MPU6050 mpu6050;
 
@@ -33,6 +39,15 @@ double norm(double n, double min_n, double max_n) {
 void readSensors() {
     mpu6050.getMotion6(&ac[0], &ac[1], &ac[2], &av[0], &av[1], &av[2]);
     sensor_temperature = (mpu6050.getTemperature() - MPU6050_TEMP_ZERO) / MPU6050_TEMP_PER_DEGREE;
+}
+
+void adjustData() {
+    ac[0] = ac[0] + MPU6050_ACCEL_OFFSET_X;
+    ac[1] = ac[1] + MPU6050_ACCEL_OFFSET_Y;
+    ac[2] = ac[2] + MPU6050_ACCEL_OFFSET_Z;
+    av[0] = av[0] + MPU6050_GYRO_OFFSET_X;
+    av[1] = av[1] + MPU6050_GYRO_OFFSET_Y;
+    av[2] = av[2] + MPU6050_GYRO_OFFSET_Z;
 }
 
 void calculateData() {
@@ -67,19 +82,20 @@ void setup() {
     mpu6050.setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
     mpu6050.setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
 
-    mpu6050.setXAccelOffset(-1880);
-    mpu6050.setYAccelOffset(2260);
-    mpu6050.setZAccelOffset(550);
+    mpu6050.setXAccelOffset(0);
+    mpu6050.setYAccelOffset(0);
+    mpu6050.setZAccelOffset(0);
     
-    mpu6050.setXGyroOffset(-32);
-    mpu6050.setYGyroOffset(-41);
-    mpu6050.setZGyroOffset(3);
+    mpu6050.setXGyroOffset(0);
+    mpu6050.setYGyroOffset(0);
+    mpu6050.setZGyroOffset(0);
     
     // configure Arduino LED for
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, mpu6050OK);
 
     readSensors();
+    adjustData();
     for (int i = 0; i < 3; i++) {
         g[i] = norm(ac[i], 0.0, MPU6050_SENS_2G);
     }
@@ -87,6 +103,7 @@ void setup() {
 
 void loop() {
     readSensors();
+    adjustData();
     calculateData();
 
     Serial.print(ac[0]);
@@ -94,19 +111,19 @@ void loop() {
     Serial.print(ac[1]);
     Serial.print(",");
     Serial.print(ac[2]);
-    Serial.print(",");
+    Serial.print("    ");
     Serial.print(av[0]);
     Serial.print(",");
     Serial.print(av[1]);
     Serial.print(",");
     Serial.print(av[2]);
-    Serial.print(",");
+    Serial.print("    ");
     Serial.print(g[0]);
     Serial.print(",");
     Serial.print(g[1]);
     Serial.print(",");
     Serial.print(g[2]);
-    Serial.print(",");
+    Serial.print("    ");
     Serial.print(sensor_temperature);
     Serial.println("");
 
